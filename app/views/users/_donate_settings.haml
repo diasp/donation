@@ -1,0 +1,91 @@
+.row
+  .col-md-9
+    %h3
+      = t("aspects.index.donate")
+      ❤️
+    
+    We don't sell your data to advertisers or other third parties. There are no ads. If you enjoy our service and find it useful, please consider donating to help us pay our monthly costs for server, domain, maintainance, user support, backup, and development.
+    
+    %hr
+    
+    = form_for current_user, url: update_donate_settings_path, html: {method: :put} do |f|
+      = f.error_messages
+      - if @user.stripe_last4.blank?
+        %b Become a Diaspora backer for 11 € per year and help us sustain our activities!
+        %br
+        = "Payment processed securely with bank-level SSL."
+      - else
+        %b Thanks for supporting us with 11 € per year.
+        %br
+        = "Payment information: **** **** **** #{@user.stripe_last4} processed securely with bank-level SSL."
+      %br
+      
+      %br
+      #card-element.input-block-level.form-control{:style => "padding-left: 10px;"}
+      #card-errors{:role => "alert"}
+      %br
+      %br
+      = f.submit t("users.edit.change"), class: "btn btn-primary pull-right", id: "submit-button", disabled: "false"
+      %br
+      %br
+      %b Many thanks for your donation!
+      %br
+      %br
+      
+      %script{:src => "https://js.stripe.com/v3/"}
+      :javascript
+        var stripe = Stripe('pk_live_xxxxxxxxxxxxxxxxxxxx');
+        var elements = stripe.elements();
+        document.getElementById('submit-button').disabled = false;
+        var style = {
+          base: {
+            fontSize: '16px',
+            color: '#666666',
+            '::placeholder': {
+              color: '#999999'
+            },
+          }
+        };
+        // Create an instance of the card Element.
+        var card = elements.create('card', {style: style});
+        // Add an instance of the card Element into the `card-element` <div>.
+        card.mount('#card-element');
+        card.addEventListener('change', function(event) {
+          var displayError = document.getElementById('card-errors');
+          if (event.error) {
+            displayError.textContent = event.error.message;
+            document.getElementById('submit-button').disabled = false;
+          } else {
+            displayError.textContent = '';
+          }
+        });
+        // Create a token or display an error when the form is submitted.
+        var form = document.getElementsByClassName('edit_user')[0];
+        form.addEventListener('submit', function(event) {
+          event.preventDefault();
+        
+          stripe.createToken(card).then(function(result) {
+            if (result.error) {
+              // Inform the customer that there was an error.
+              var errorElement = document.getElementById('card-errors');
+              errorElement.textContent = result.error.message;
+              document.getElementById('submit-button').disabled = false;
+            } else {
+              // Send the token to your server.
+              stripeTokenHandler(result.token);
+            }
+          });
+        });
+        function stripeTokenHandler(token) {
+          // Insert the token ID into the form so it gets submitted to the server
+          var form = document.getElementsByClassName('edit_user')[0];
+          var hiddenInput = document.createElement('input');
+          hiddenInput.setAttribute('type', 'hidden');
+          hiddenInput.setAttribute('name', 'stripe_token');
+          hiddenInput.setAttribute('value', token.id);
+          form.appendChild(hiddenInput);
+
+          // Submit the form
+          form.submit();
+        }
+      
